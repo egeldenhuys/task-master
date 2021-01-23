@@ -47,6 +47,8 @@ if [ "$task_last_exit_code" = "0" ]; then
     exit 0
 fi
 
+send_message "Starting Task Master for task $task_name"
+
 $watcher_script "$message_url_prefix" "$task_name" $$ "$kill_hour_start" "$kill_minute_start" "$kill_hour_stop" "$kill_minute_stop" &
 watcher_pid=$!
 

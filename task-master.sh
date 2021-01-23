@@ -39,7 +39,7 @@ function send_message() {
     message=$(echo "$message" | tr " " "-")
     message=$(echo "$message" | sed -z 's/\n/%0A/g')
     message=$(echo "$message" | sed -z 's/\\n/%0A/g')
-    curl --silent --retry 3 --retry-delay 30 "$message_url_prefix/$message" > /dev/null
+    curl -sS --retry 3 --retry-delay 30 "$message_url_prefix/$message" > /dev/null
 }
 
 if [ "$task_last_exit_code" = "0" ]; then

@@ -39,15 +39,15 @@ function send_message() {
     message=$(echo "$message" | tr " " "-")
     message=$(echo "$message" | sed -z 's/\n/%0A/g')
     message=$(echo "$message" | sed -z 's/\\n/%0A/g')
-    curl -sS --retry 3 --retry-delay 30 "$message_url_prefix/$message" > /dev/null
+    set +e
+    curl -sS --retry 2 "$message_url_prefix/$message" > /dev/null
+    set -e
 }
 
 if [ "$task_last_exit_code" = "0" ]; then
     send_message "Task $task_name has already been executed successfully."
     exit 0
 fi
-
-send_message "Starting Task Master for task $task_name"
 
 $watcher_script "$message_url_prefix" "$task_name" $$ "$kill_hour_start" "$kill_minute_start" "$kill_hour_stop" "$kill_minute_stop" &
 watcher_pid=$!
@@ -78,18 +78,21 @@ while [ ! "$task_exit_code" = "0" ]; do
     send_message "Running task: $task_name..."
 
     set +e
-    $task_script 2>&1 | tee "$task_log_file" &
-    task_pid=$!
-    wait $task_pid
+    $task_script
     task_exit_code=$?
+    # 2>&1 | tee "$task_log_file" &
+    #task_pid=$!
+    #wait $task_pid
+    #task_exit_code=${PIPESTATUS[0]}
     set -e
 
+    echo "EXIT CODE: $task_exit_code"
     if [ "$task_exit_code" = "0" ]; then
         send_message "Task $task_name executed successfully."
         echo "0" > "$task_last_exit_code_file"
         exit 0
     else
-        send_message "Task Log: $task_name \n $(tail "$task_log_file")"
+        #send_message "Task Log: $task_name \n $(tail "$task_log_file")"
         send_message "Task $task_name failed with exit code $task_exit_code. Retrying in $task_retry_delay_seconds seconds."
         sleep $task_retry_delay_seconds
     fi
